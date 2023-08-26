@@ -1,5 +1,6 @@
 import json
 import os
+import random
 
 from misskey import Misskey
 
@@ -20,9 +21,26 @@ def post(body: dict):
         i       = os.environ['MISSKEY_TOKEN'],
     )
 
+    comment_list = [
+        "そんな時は、タウンワーク！🐖",
+        "かゆみ止めには、タウンワーク！🐖",
+        "タウンワークがあるじゃないか！🐖",
+        "タウンワーク、多め！🐖🐖",
+        "タウンワーク、マシマシ！！🐖🐖🐖🐖",
+        "つ「タウンワーク」🐖",
+        "TOWNWORK なんだ！🐖",
+        "そんな時にタウンワークが便利なんですよ。🐖",
+        "ちょうどタウンワーク持ってた。あげる。🐖",
+        "掻いてあげる",
+        "ごめん、タウンページしかない。 (´・_・`)",
+        "こっちがサンキューって言いたいよ。\nかゆみ止めには、タウンワーク！🐖",
+        "かゆみ止めアプリは、タウンワーク！🐖",
+    ]
+    comment = comment_list[random.randrange(len(comment_list))]
+
     # Let's note!
     mk.notes_create(
-        text     = f"@{user['username']} そんな時は、タウンワーク！🐖",
+        text     = f"@{user['username']} {comment}",
         reply_id = note['id'],
     )
 

@@ -46,6 +46,7 @@ def post(body: dict):
     mk.notes_create(
         text=f"{username}{host} {comment}",
         reply_id=note["id"],
+        visibility=note["visibility"],
     )
 
 

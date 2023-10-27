@@ -1,8 +1,10 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 set -euxo pipefail
 cd "$(dirname "$0")"
 
+# shellcheck source=/dev/null
 source .venv/bin/activate
+
 pip install -r requirements.txt -t .
-rm -f ../replyTownworkByMisskeyNote.zip
-zip -r ../replyTownworkByMisskeyNote.zip *
+rm -f "${1}"
+zip -r "${1}" ./*

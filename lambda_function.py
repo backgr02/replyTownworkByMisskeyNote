@@ -4,21 +4,22 @@ import random
 
 from misskey import Misskey
 
+
 def post(body: dict):
     print("post")
     print(json.dumps(body))
 
-    note = body['body']['note']
-    user = body['body']['note']['user']
+    note = body["body"]["note"]
+    user = body["body"]["note"]["user"]
 
-    if ("痒い" not in note.get('tags', [])):
+    if "痒い" not in note.get("tags", []):
         return
 
     # Input instance address (If leaved no attribute, it sets "misskey.io")
-    #TODO: Set Misskey token in environment variable to AWS Lambda
+    # TODO: Set Misskey token in environment variable to AWS Lambda
     mk = Misskey(
-        address = "misskey.io",
-        i       = os.environ['MISSKEY_TOKEN'],
+        address="misskey.io",
+        i=os.environ["MISSKEY_TOKEN"],
     )
 
     comment_list = [
@@ -38,19 +39,19 @@ def post(body: dict):
     ]
     comment = comment_list[random.randrange(len(comment_list))]
 
+    username = f"@{user['username']}" if user["username"] else ""
+    host = f"@{user['host']}" if user["host"] else ""
+
     # Let's note!
     mk.notes_create(
-        text     = f"@{user['username']} {comment}",
-        reply_id = note['id'],
+        text=f"{username}{host} {comment}",
+        reply_id=note["id"],
     )
 
 
 def lambda_handler(event, context):
     print(json.dumps(event))
     print(context)
-    body = json.loads(event['body'])
+    body = json.loads(event["body"])
     post(body)
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+    return {"statusCode": 200, "body": json.dumps("Hello from Lambda!")}

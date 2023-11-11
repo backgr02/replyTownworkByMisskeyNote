@@ -1,14 +1,13 @@
-import * as Misskey from "misskey-js";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  GetCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import * as Misskey from "misskey-js";
 
-const client = new DynamoDBClient({});
+const misskeyAPIClient = new Misskey.api.APIClient({
+  origin: process.env.MISSKEY_URI,
+  credential: process.env.MISSKEY_TOKEN,
+});
 
-const dynamo = DynamoDBDocumentClient.from(client, {
+const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: {
     removeUndefinedValues: true,
   },
@@ -41,17 +40,12 @@ const commentList = [
 ];
 
 async function popTownwork() {
-  const info = await dynamo.send(
-    new GetCommand({ TableName: tableName, Key: { id: "townwork_info" } })
-  );
+  const info = await dynamo.send(new GetCommand({ TableName: tableName, Key: { id: "townwork_info" } }));
   let stock = info.Item?.stock == null ? 0 : info.Item.stock;
   let comment = commentList[Math.floor(Math.random() * commentList.length)];
   console.log(JSON.stringify({ stock: stock, num: comment.num }));
   if (stock + comment.num < 0) {
-    comment =
-      commentNoTownworkList[
-        Math.floor(Math.random() * commentNoTownworkList.length)
-      ];
+    comment = commentNoTownworkList[Math.floor(Math.random() * commentNoTownworkList.length)];
     console.log(JSON.stringify({ stock: stock, num: comment.num }));
   }
   stock += comment.num;
@@ -66,9 +60,15 @@ async function popTownwork() {
   return `${comment.text}\n残り： ${stock.toLocaleString()} タウンワーク`;
 }
 
-async function post(body) {
-  console.log(JSON.stringify(body));
+async function followed(body) {
+  return await createFollowing(body.body.user.id);
+}
 
+async function createFollowing(userId) {
+  return await misskeyAPIClient.request("following/create", { userId: userId });
+}
+
+async function mention(body) {
   const note = body.body.note;
   const user = body.body.note.user;
 
@@ -76,14 +76,9 @@ async function post(body) {
     return {};
   }
 
-  const cli = new Misskey.api.APIClient({
-    origin: process.env.MISSKEY_URI,
-    credential: process.env.MISSKEY_TOKEN,
-  });
-
   const host = user?.host ? `@${user.host}` : "";
 
-  return await cli.request("notes/create", {
+  return await misskeyAPIClient.request("notes/create", {
     text: `@${user.username}${host} ${await popTownwork()}`,
     replyId: note.id,
     visibility: note.visibility,
@@ -96,7 +91,16 @@ export const handler = async (event, _context) => {
     const headers = {
       "Content-Type": "application/json",
     };
-    const response = await post(JSON.parse(event.body));
+    let response = {};
+    const body = JSON.parse(event.body);
+    console.log(JSON.stringify(body));
+    if (body.type === "mention") {
+      response = await mention(body);
+    } else if (body.type === "followed") {
+      response = await followed(body);
+    } else {
+      response = { a: body.type };
+    }
 
     console.log(JSON.stringify(response));
     return {
